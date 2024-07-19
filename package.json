@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "build": "pnpm -r --filter ./packages/** run build",
-    "log": "changelogen"
+    "log": "changelogen --output"
   },
   "devDependencies": {
     "changelogen": "^0.5.5",
