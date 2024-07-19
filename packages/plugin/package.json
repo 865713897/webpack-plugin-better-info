@@ -1,0 +1,42 @@
+{
+  "name": "webpack-plugin-better-info",
+  "version": "0.0.2",
+  "description": "webpack info plugin",
+  "main": "./lib/index.cjs",
+  "types": "./lib/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "exports": {
+    "import": {
+      "default": "./lib/index.mjs",
+      "types": "./lib/index.d.mts"
+    },
+    "require": {
+      "default": "./lib/index.cjs",
+      "types": "./lib/index.d.cts"
+    }
+  },
+  "scripts": {
+    "build": "unbuild && cp ./lib/index.cjs ../../examples/app/plugin/index.js"
+  },
+  "keywords": [
+    "webpack",
+    "plugin",
+    "info"
+  ],
+  "author": {
+    "name": "limy",
+    "email": "865713897@qq.com"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/progress": "^2.0.7",
+    "strip-ansi": "^7.1.0",
+    "webpack": "^5.93.0"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "progress": "^2.0.3"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r --filter ./packages/** run build",
+    "log": "changelogen"
+  },
+  "devDependencies": {
+    "changelogen": "^0.5.5",
+    "typescript": "^5.5.3",
+    "unbuild": "^2.0.0"
+  }
+}
