@@ -89,6 +89,7 @@ class Logger {
 
     console.log(`\n  ${chalk.blue.bold('Total size:')}  ${getSize(totalSize)}`);
     console.log(`  ${chalk.blue.bold('Gzipped size:')}  ${getSize(totalZipSize)}`);
+    process.exit(0);
   }
 }
 

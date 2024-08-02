@@ -92,10 +92,10 @@ export const gradient = (startColor: string, endColor: string, steps: number): C
   });
 };
 
-// 从stats中找出错误
-export const findErrorsFromStats = (stats: any, errorType: 'errors' | 'warnings') => {
-  const errors = stats.compilation[errorType];
-  errors.forEach((error) => {
-    console.log(error.message);
+export const uniqueBy = (arr: any[], callback: (item: any) => any) => {
+  const seen = {};
+  return arr.filter((item) => {
+    const value = callback(item);
+    return !(value in seen) && (seen[value] = 1);
   });
 };

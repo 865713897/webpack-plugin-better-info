@@ -18,7 +18,7 @@
     }
   },
   "scripts": {
-    "build": "unbuild && cp ./lib/index.cjs ../../examples/app/plugin/index.js"
+    "build": "unbuild"
   },
   "keywords": [
     "webpack",

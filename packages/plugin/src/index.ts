@@ -1,6 +1,7 @@
-import webpack, { Compiler, Stats } from 'webpack';
+import webpack, { Compiler, Stats, Compilation } from 'webpack';
 import chalk from 'chalk';
-import { gradient } from './utils/utils';
+import { gradient, uniqueBy } from './utils/utils';
+import { transformErrors } from './utils/transformErrors';
 import ProgressBar from './utils/progress';
 import logger from './utils/logger';
 
@@ -105,17 +106,11 @@ class WebpackPluginBetterInfo {
   }
 
   // 输出错误信息
-  displayError(stats: Stats) {
-    const errors = stats.toJson().errors;
-    errors.forEach((error) => {
+  async displayError(stats: Stats) {
+    const errors = await transformErrors(stats.toJson().errors);
+    errors.forEach((error: any) => {
       logger.error(`in ${error.moduleName}`);
-      logger.error(
-        error.message
-          .replace(/^Module build failed.*:\s/, '')
-          .replace('Error:', '')
-          .trim(),
-      );
-      // console.log(error.details);
+      logger.error(error.message);
     });
   }
 
@@ -128,6 +123,22 @@ class WebpackPluginBetterInfo {
     sortAssets?.sort((a, b) => a.size - b.size);
     logger.info('Production file sizes for web:\n');
     logger.assets(sortAssets, outputPath);
+  }
+
+  // 提取错误信息
+  extractErrorsFromStats(stats: Stats, type: 'errors' | 'warnings') {
+    const findErrors = (compilation: Compilation) => {
+      const errors = compilation[type];
+      if (errors.length === 0 && compilation.children) {
+        for (const child of compilation.children) {
+          errors.push(...findErrors(child));
+        }
+      }
+
+      return uniqueBy(errors, (error) => error.message);
+    };
+
+    return findErrors(stats.compilation);
   }
 }
 
