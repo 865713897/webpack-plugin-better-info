@@ -22,7 +22,7 @@ export const getSize = (byte: number) => {
 };
 
 // 计算压缩大小
-export const getCompressSize = (filePath: string) => {
+export const getCompressSize = (filePath: string): Promise<number> => {
   return new Promise((resolve, reject) => {
     const _path = path.resolve(process.cwd(), filePath);
     readFile(_path, (error, content) => {

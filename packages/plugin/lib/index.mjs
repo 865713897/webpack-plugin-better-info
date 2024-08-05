@@ -293,6 +293,15 @@ class Logger {
 }
 const logger = new Logger();
 
+function getColorFileName(name) {
+  if (name.includes(".html")) {
+    return chalk.green(name);
+  } else if (name.includes(".js")) {
+    return chalk.yellow(name);
+  } else if (name.includes(".css")) {
+    return chalk.blue(name);
+  }
+}
 async function displayAssets(assets, outputPath) {
   const assetPromises = assets.map(async (asset) => {
     const { name, size } = asset;
@@ -300,7 +309,7 @@ async function displayAssets(assets, outputPath) {
     const filePath = name.substring(0, lastSlashIndex);
     const fileName = name.substring(lastSlashIndex + 1);
     const path = `${outputPath}/${filePath ? filePath + "/" : ""}`;
-    const newName = `${chalk.gray(path)}${chalk.cyan(fileName)}`;
+    const newName = `${chalk.gray(path)}${getColorFileName(fileName)}`;
     const zipSize = await getCompressSize(`${path}/${fileName}`);
     return { name: newName, size, zipSize };
   });
@@ -330,9 +339,7 @@ async function displayAssets(assets, outputPath) {
   console.log(
     `  ${fileTitle}${"".padStart(
       maxNameLen - stripAnsi(fileTitle).length
-    )}    ${sizeTitle}${"".padStart(
-      maxSizeLen - stripAnsi(sizeTitle).length
-    )}    ${zipSizeTitle}`
+    )}    ${sizeTitle}${"".padStart(maxSizeLen - stripAnsi(sizeTitle).length)}    ${zipSizeTitle}`
   );
   newAssets.forEach(({ name, size, zipSize }) => {
     console.log(
