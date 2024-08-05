@@ -18,9 +18,9 @@ declare class WebpackPluginBetterInfo {
     getStatsCompileTime(stats: Stats): number;
     getGradientContent(content: string, colors: [string, string]): string;
     displaySuccess(stats: Stats): void;
-    displayError(stats: Stats): Promise<void>;
+    displayError(stats: Stats): void;
+    displayWarning(stats: Stats): void;
     displayStatsAssets(stats: Stats, path: string): void;
-    extractErrorsFromStats(stats: Stats, type: 'errors' | 'warnings'): any[];
 }
 
 export { WebpackPluginBetterInfo as default };

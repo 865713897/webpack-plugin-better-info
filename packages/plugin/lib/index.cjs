@@ -81,30 +81,25 @@ const gradient = (startColor, endColor, steps) => {
     return chalk__default.hex(colorToHex(interpolatedColor));
   });
 };
-const uniqueBy = (arr, callback) => {
-  const seen = {};
-  return arr.filter((item) => {
-    const value = callback(item);
-    return !(value in seen) && (seen[value] = 1);
-  });
-};
 
-const transformBuildErrors = (error) => {
-  return new Promise((resolve) => {
-    const isModuleBuildError = error.stack?.includes("ModuleBuildError");
-    if (isModuleBuildError) {
-      error.message = error.message.replace(/^Module build failed.*:\s/, "").replace(/^SyntaxError:.*:\s/, "").replace(/^\s*at\s.*:\d+:\d+\)?[\s]*$/gm, "").replace("Error:", "").replace("Caused by:", "").replace("Syntax Error", "").trim();
-    }
-    resolve(error);
-  });
+const isModuleBuildError = (error) => {
+  return error.stack?.includes("ModuleBuildError") || error.stack?.includes("ModuleNotFoundError");
 };
-const transformErrors = async (errors) => {
-  const tasks = errors.map(async (error) => {
-    const transformedError = await transformBuildErrors(error);
-    return transformedError;
-  });
-  const transformedErrors = await Promise.all(tasks);
-  return transformedErrors;
+const cleanErrorMessage = (message) => {
+  return message.replace(/^Module build failed.*:\s/, "").replace(/^SyntaxError:.*:\s/, "").replace(/^\s*at\s.*:\d+:\d+\)?[\s]*$/gm, "").replace(/^Module not found:\s/, "").replace(/Error:|Caused by:|Syntax Error/g, "").trim();
+};
+const cleanErrorModuleName = (moduleName) => {
+  return moduleName.replace(/^.*(?=\.\/src)/, "").replace(/\?.*/, "");
+};
+const transformBuildErrors = (error) => {
+  if (isModuleBuildError(error)) {
+    error.message = cleanErrorMessage(error.message);
+    error.moduleName = cleanErrorModuleName(error.moduleName);
+  }
+  return error;
+};
+const transformErrors = (errors) => {
+  return errors.map(transformBuildErrors);
 };
 
 function ansiRegex({onlyFirst = false} = {}) {
@@ -302,61 +297,65 @@ class Logger {
   error(message) {
     console.log(`${chalk__default.red("error")} - ${message}`);
   }
-  async assets(assets, outputPath) {
-    const assetPromises = assets.map(async (asset) => {
-      const { name, size } = asset;
-      const lastSlashIndex = name.lastIndexOf("/");
-      const filePath = name.substring(0, lastSlashIndex);
-      const fileName = name.substring(lastSlashIndex + 1);
-      const path = `${outputPath}/${filePath ? filePath + "/" : ""}`;
-      const newName = `${chalk__default.gray(path)}${chalk__default.cyan(fileName)}`;
-      const zipSize = await getCompressSize(`${path}/${fileName}`);
-      return { name: newName, size, zipSize };
-    });
-    const resolvedAssets = await Promise.all(assetPromises);
-    const { newAssets, totalSize, totalZipSize, maxNameLen, maxSizeLen } = resolvedAssets.reduce(
-      (acc, { name, size, zipSize }) => {
-        const fullSize = getSize(size);
-        const fullZipSize = getSize(zipSize);
-        acc.newAssets.push({ name, size: fullSize, zipSize: fullZipSize });
-        acc.maxNameLen = Math.max(acc.maxNameLen, stripAnsi(name).length);
-        acc.maxSizeLen = Math.max(acc.maxSizeLen, fullSize.length);
-        acc.totalSize += size;
-        acc.totalZipSize += zipSize;
-        return acc;
-      },
-      {
-        newAssets: [],
-        totalSize: 0,
-        totalZipSize: 0,
-        maxNameLen: 0,
-        maxSizeLen: 0
-      }
-    );
-    const fileTitle = chalk__default.blue.bold("File");
-    const sizeTitle = chalk__default.blue.bold("Size");
-    const zipSizeTitle = chalk__default.blue.bold("Gzipped");
-    console.log(
-      `  ${fileTitle}${"".padStart(
-        maxNameLen - stripAnsi(fileTitle).length
-      )}    ${sizeTitle}${"".padStart(
-        maxSizeLen - stripAnsi(sizeTitle).length
-      )}    ${zipSizeTitle}`
-    );
-    newAssets.forEach(({ name, size, zipSize }) => {
-      console.log(
-        `  ${name}${"".padStart(maxNameLen - stripAnsi(name).length)}    ${size}${"".padStart(
-          maxSizeLen - stripAnsi(size).length
-        )}    ${chalk__default.green(zipSize)}`
-      );
-    });
-    console.log(`
-  ${chalk__default.blue.bold("Total size:")}  ${getSize(totalSize)}`);
-    console.log(`  ${chalk__default.blue.bold("Gzipped size:")}  ${getSize(totalZipSize)}`);
-    process.exit(0);
+  warn(message) {
+    console.log(`${chalk__default.yellow("warn")}  - ${message}`);
   }
 }
 const logger = new Logger();
+
+async function displayAssets(assets, outputPath) {
+  const assetPromises = assets.map(async (asset) => {
+    const { name, size } = asset;
+    const lastSlashIndex = name.lastIndexOf("/");
+    const filePath = name.substring(0, lastSlashIndex);
+    const fileName = name.substring(lastSlashIndex + 1);
+    const path = `${outputPath}/${filePath ? filePath + "/" : ""}`;
+    const newName = `${chalk__default.gray(path)}${chalk__default.cyan(fileName)}`;
+    const zipSize = await getCompressSize(`${path}/${fileName}`);
+    return { name: newName, size, zipSize };
+  });
+  const resolvedAssets = await Promise.all(assetPromises);
+  const { newAssets, totalSize, totalZipSize, maxNameLen, maxSizeLen } = resolvedAssets.reduce(
+    (acc, { name, size, zipSize }) => {
+      const fullSize = getSize(size);
+      const fullZipSize = getSize(zipSize);
+      acc.newAssets.push({ name, size: fullSize, zipSize: fullZipSize });
+      acc.maxNameLen = Math.max(acc.maxNameLen, stripAnsi(name).length);
+      acc.maxSizeLen = Math.max(acc.maxSizeLen, fullSize.length);
+      acc.totalSize += size;
+      acc.totalZipSize += zipSize;
+      return acc;
+    },
+    {
+      newAssets: [],
+      totalSize: 0,
+      totalZipSize: 0,
+      maxNameLen: 0,
+      maxSizeLen: 0
+    }
+  );
+  const fileTitle = chalk__default.blue.bold("File");
+  const sizeTitle = chalk__default.blue.bold("Size");
+  const zipSizeTitle = chalk__default.blue.bold("Gzipped");
+  console.log(
+    `  ${fileTitle}${"".padStart(
+      maxNameLen - stripAnsi(fileTitle).length
+    )}    ${sizeTitle}${"".padStart(
+      maxSizeLen - stripAnsi(sizeTitle).length
+    )}    ${zipSizeTitle}`
+  );
+  newAssets.forEach(({ name, size, zipSize }) => {
+    console.log(
+      `  ${name}${"".padStart(maxNameLen - stripAnsi(name).length)}    ${size}${"".padStart(
+        maxSizeLen - stripAnsi(size).length
+      )}    ${chalk__default.green(zipSize)}`
+    );
+  });
+  console.log(`
+  ${chalk__default.blue.bold("Total size:")}  ${getSize(totalSize)}`);
+  console.log(`  ${chalk__default.blue.bold("Gzipped size:")}  ${getSize(totalZipSize)}`);
+  process.exit(0);
+}
 
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -416,6 +415,9 @@ class WebpackPluginBetterInfo {
       if (hasErrors) {
         this.displayError(stats);
       }
+      if (hasWarnings) {
+        this.displayWarning(stats);
+      }
     });
   }
   clearConsole() {
@@ -443,11 +445,19 @@ class WebpackPluginBetterInfo {
     logger.ready(`Compiled in ${chalk__default.whiteBright.bold(compileTime)} ms`);
   }
   // 输出错误信息
-  async displayError(stats) {
-    const errors = await transformErrors(stats.toJson().errors);
+  displayError(stats) {
+    const errors = transformErrors(stats.toJson().errors);
     errors.forEach((error) => {
       logger.error(`in ${error.moduleName}`);
       logger.error(error.message);
+    });
+  }
+  // 输出警告信息
+  displayWarning(stats) {
+    const warnings = stats.toJson().warnings;
+    warnings.forEach((warning) => {
+      logger.warn(`in ${warning.moduleName}`);
+      logger.warn(warning.message);
     });
   }
   // 输出最终产物
@@ -459,20 +469,7 @@ class WebpackPluginBetterInfo {
     const sortAssets = assets?.map((asset) => ({ name: asset.name, size: asset.size })) || [];
     sortAssets?.sort((a, b) => a.size - b.size);
     logger.info("Production file sizes for web:\n");
-    logger.assets(sortAssets, outputPath);
-  }
-  // 提取错误信息
-  extractErrorsFromStats(stats, type) {
-    const findErrors = (compilation) => {
-      const errors = compilation[type];
-      if (errors.length === 0 && compilation.children) {
-        for (const child of compilation.children) {
-          errors.push(...findErrors(child));
-        }
-      }
-      return uniqueBy(errors, (error) => error.message);
-    };
-    return findErrors(stats.compilation);
+    displayAssets(sortAssets, outputPath);
   }
 }
 

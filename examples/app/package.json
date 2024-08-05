@@ -10,7 +10,7 @@
     "react-router-dom": "^6.26.0"
   },
   "devDependencies": {
-    "elza": "^0.0.3",
+    "elza": "0.0.3",
     "webpack-plugin-better-info": "workspace:*"
   }
 }
