@@ -1,6 +1,6 @@
 {
   "name": "webpack-plugin-better-info",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "webpack info plugin",
   "main": "./lib/index.cjs",
   "types": "./lib/index.d.ts",

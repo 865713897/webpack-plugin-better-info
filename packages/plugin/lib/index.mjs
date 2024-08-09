@@ -301,6 +301,7 @@ function getColorFileName(name) {
   } else if (name.includes(".css")) {
     return chalk.blue(name);
   }
+  return name;
 }
 async function displayAssets(assets, outputPath) {
   const assetPromises = assets.map(async (asset) => {

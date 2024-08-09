@@ -6,7 +6,7 @@ import ProgressBar from './utils/progress';
 import logger from './utils/logger';
 import { displayAssets } from './utils/outputAssets';
 
-interface BetterInfoOptions {
+export interface BetterInfoOptions {
   complete?: string;
   incomplete?: string;
   colors?: any;

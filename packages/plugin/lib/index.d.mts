@@ -23,4 +23,4 @@ declare class WebpackPluginBetterInfo {
     displayStatsAssets(stats: Stats, path: string): void;
 }
 
-export { WebpackPluginBetterInfo as default };
+export { type BetterInfoOptions, WebpackPluginBetterInfo as default };
