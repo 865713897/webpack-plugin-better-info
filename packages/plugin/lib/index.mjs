@@ -293,6 +293,7 @@ class Logger {
 }
 const logger = new Logger();
 
+const maxFileSize = 224 * 1024;
 function getColorFileName(name) {
   if (name.includes(".html")) {
     return chalk.green(name);
@@ -319,7 +320,7 @@ async function displayAssets(assets, outputPath) {
     (acc, { name, size, zipSize }) => {
       const fullSize = getSize(size);
       const fullZipSize = getSize(zipSize);
-      acc.newAssets.push({ name, size: fullSize, zipSize: fullZipSize });
+      acc.newAssets.push({ name, size: fullSize, zipSize: fullZipSize, originalSize: size });
       acc.maxNameLen = Math.max(acc.maxNameLen, stripAnsi(name).length);
       acc.maxSizeLen = Math.max(acc.maxSizeLen, fullSize.length);
       acc.totalSize += size;
@@ -342,11 +343,12 @@ async function displayAssets(assets, outputPath) {
       maxNameLen - stripAnsi(fileTitle).length
     )}    ${sizeTitle}${"".padStart(maxSizeLen - stripAnsi(sizeTitle).length)}    ${zipSizeTitle}`
   );
-  newAssets.forEach(({ name, size, zipSize }) => {
+  newAssets.forEach(({ name, size, zipSize, originalSize }) => {
+    const colorZipSize = originalSize > maxFileSize ? chalk.red(zipSize) : chalk.green(zipSize);
     console.log(
       `  ${name}${"".padStart(maxNameLen - stripAnsi(name).length)}    ${size}${"".padStart(
         maxSizeLen - stripAnsi(size).length
-      )}    ${chalk.green(zipSize)}`
+      )}    ${colorZipSize}`
     );
   });
   console.log(`
@@ -405,17 +407,15 @@ class WebpackPluginBetterInfo {
     compiler.hooks.done.tap(plugin, (stats) => {
       const hasErrors = stats.hasErrors();
       const hasWarnings = stats.hasWarnings();
-      if (!hasErrors && !hasWarnings) {
-        this.displaySuccess(stats);
-        this.displayStatsAssets(stats, compiler.options.output.path);
-        return;
-      }
       if (hasErrors) {
         this.displayError(stats);
+        return;
       }
       if (hasWarnings) {
         this.displayWarning(stats);
       }
+      this.displaySuccess(stats);
+      this.displayStatsAssets(stats, compiler.options.output.path);
     });
   }
   clearConsole() {
@@ -454,7 +454,7 @@ class WebpackPluginBetterInfo {
   displayWarning(stats) {
     const warnings = stats.toJson().warnings;
     warnings.forEach((warning) => {
-      logger.warn(`in ${warning.moduleName}`);
+      warning.moduleName && logger.warn(`in ${warning.moduleName}`);
       logger.warn(warning.message);
     });
   }

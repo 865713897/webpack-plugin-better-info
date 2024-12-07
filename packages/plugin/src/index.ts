@@ -1,6 +1,6 @@
-import webpack, { Compiler, Stats, Compilation } from 'webpack';
+import webpack, { Compiler, Stats } from 'webpack';
 import chalk from 'chalk';
-import { gradient, uniqueBy } from './utils/utils';
+import { gradient } from './utils/utils';
 import { transformErrors } from './utils/transformErrors';
 import ProgressBar from './utils/progress';
 import logger from './utils/logger';
@@ -64,17 +64,15 @@ class WebpackPluginBetterInfo {
     compiler.hooks.done.tap(plugin, (stats: Stats) => {
       const hasErrors = stats.hasErrors();
       const hasWarnings = stats.hasWarnings();
-      if (!hasErrors && !hasWarnings) {
-        this.displaySuccess(stats);
-        this.displayStatsAssets(stats, compiler.options.output.path);
-        return;
-      }
       if (hasErrors) {
         this.displayError(stats);
+        return;
       }
       if (hasWarnings) {
         this.displayWarning(stats);
       }
+      this.displaySuccess(stats);
+      this.displayStatsAssets(stats, compiler.options.output.path);
     });
   }
 
@@ -122,7 +120,7 @@ class WebpackPluginBetterInfo {
   displayWarning(stats: Stats) {
     const warnings = stats.toJson().warnings;
     warnings.forEach((warning: any) => {
-      logger.warn(`in ${warning.moduleName}`);
+      warning.moduleName && logger.warn(`in ${warning.moduleName}`);
       logger.warn(warning.message);
     });
   }
